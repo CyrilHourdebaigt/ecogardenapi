@@ -102,4 +102,70 @@ final class ConseilController extends AbstractController
             Response::HTTP_CREATED
         );
     }
+
+    #[Route('/conseil/{id}', name: 'app_conseil_update', methods: ['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour modifier un conseil.')]
+    public function updateConseil(
+        int $id,
+        Request $request,
+        ConseilRepository $conseilRepository,
+        SerializerInterface $serializer,
+        ValidatorInterface $validator,
+        EntityManagerInterface $entityManager
+    ): JsonResponse {
+        // On recherche le conseil à modifier en base de données
+        $conseil = $conseilRepository->find($id);
+
+        // Si le conseil n'existe pas, on retourne une erreur 404
+        if (!$conseil) {
+            return new JsonResponse(['error' => 'Conseil introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        // On transforme le JSON reçu en tableau PHP
+        $data = json_decode($request->getContent(), true);
+
+        // Si le JSON est invalide, on retourne une erreur 400
+        if ($data === null) {
+            return new JsonResponse(['error' => 'Le JSON envoyé est invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // On met à jour uniquement les champs présents dans la requête
+        if (array_key_exists('content', $data)) {
+            $conseil->setContent($data['content']);
+        }
+
+        if (array_key_exists('months', $data)) {
+            $conseil->setMonths($data['months']);
+        }
+
+        // On valide l'entité après modification
+        $errors = $validator->validate($conseil);
+
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), Response::HTTP_BAD_REQUEST, [], true);
+        }
+
+        // Si le champ months est présent, on vérifie que chaque mois est valide
+        foreach ($conseil->getMonths() as $month) {
+            if (!is_int($month) || $month < 1 || $month > 12) {
+                return new JsonResponse(['error' => 'Chaque mois doit être un entier compris entre 1 et 12.'], Response::HTTP_BAD_REQUEST);
+            }
+        }
+
+        // On enregistre les modifications
+        $entityManager->flush();
+
+        // On retourne une réponse de succès avec le conseil mis à jour
+        return new JsonResponse(
+            [
+                'message' => 'Conseil modifié avec succès.',
+                'conseil' => [
+                    'id' => $conseil->getId(),
+                    'content' => $conseil->getContent(),
+                    'months' => $conseil->getMonths(),
+                ],
+            ],
+            Response::HTTP_OK
+        );
+    }
 }
