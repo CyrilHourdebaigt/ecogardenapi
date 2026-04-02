@@ -2,62 +2,104 @@
 
 namespace App\Controller;
 
+use App\Entity\Conseil;
 use App\Repository\ConseilRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class ConseilController extends AbstractController
 {
     #[Route('/conseil', name: 'app_conseil_list', methods: ['GET'])]
-    public function index(ConseilRepository $conseilRepository): JsonResponse
+    public function index(ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
     {
         // On récupère tous les conseils présents dans la base de données
         $conseils = $conseilRepository->findAll();
 
-        // On prépare un tableau simple pour construire la réponse JSON
-        $result = [];
+        // On sérialise les conseils au format JSON
+        $jsonConseils = $serializer->serialize($conseils, 'json');
 
-        foreach ($conseils as $conseil) {
-            $result[] = [
-                'id' => $conseil->getId(),
-                'content' => $conseil->getContent(),
-                'months' => $conseil->getMonths(),
-            ];
-        }
-
-        // On retourne les données au format JSON
-        return $this->json($result);
+        // On retourne la réponse JSON avec un code HTTP 200
+        return new JsonResponse($jsonConseils, Response::HTTP_OK, [], true);
     }
 
     #[Route('/conseil/{mois}', name: 'app_conseil_by_month', methods: ['GET'])]
-    public function getByMonth(int $mois, ConseilRepository $conseilRepository): JsonResponse
+    public function getByMonth(int $mois, ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
     {
-        // On vérifie que le mois est bien compris entre 1 et 12
+        // On vérifie que le mois demandé est valide
         if ($mois < 1 || $mois > 12) {
-            return $this->json(
-                ['error' => 'Le mois doit être compris entre 1 et 12.'],
-                JsonResponse::HTTP_BAD_REQUEST
-            );
+            return new JsonResponse(['error' => 'Le mois doit être compris entre 1 et 12.'], Response::HTTP_BAD_REQUEST);
         }
 
         // On récupère tous les conseils
         $conseils = $conseilRepository->findAll();
 
-        // On prépare un tableau pour stocker les conseils correspondant au mois demandé
-        $result = [];
+        // On prépare un tableau pour stocker uniquement les conseils du mois demandé
+        $filteredConseils = [];
 
         foreach ($conseils as $conseil) {
             if (in_array($mois, $conseil->getMonths(), true)) {
-                $result[] = [
-                    'id' => $conseil->getId(),
-                    'content' => $conseil->getContent(),
-                    'months' => $conseil->getMonths(),
-                ];
+                $filteredConseils[] = $conseil;
             }
         }
 
-        // On retourne les conseils trouvés au format JSON
-        return $this->json($result);
+        // On sérialise les conseils filtrés au format JSON
+        $jsonConseils = $serializer->serialize($filteredConseils, 'json');
+
+        // On retourne la réponse JSON
+        return new JsonResponse($jsonConseils, Response::HTTP_OK, [], true);
+    }
+
+    #[Route('/conseil', name: 'app_conseil_create', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour créer un conseil.')]
+    public function createConseil(Request $request, SerializerInterface $serializer, ValidatorInterface $validator, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // On transforme le JSON reçu en tableau PHP pour vérifier qu’il est valide
+        $data = json_decode($request->getContent(), true);
+
+        if ($data === null) {
+            return new JsonResponse(['error' => 'Le JSON envoyé est invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // On désérialise le JSON reçu en objet Conseil
+        /** @var Conseil $conseil */
+        $conseil = $serializer->deserialize($request->getContent(), Conseil::class, 'json');
+
+        // On valide l’entité Conseil grâce aux Assert définis dans l’entité
+        $errors = $validator->validate($conseil);
+
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), Response::HTTP_BAD_REQUEST, [], true);
+        }
+
+        // On vérifie manuellement que chaque mois est bien un entier entre 1 et 12
+        foreach ($conseil->getMonths() as $month) {
+            if (!is_int($month) || $month < 1 || $month > 12) {
+                return new JsonResponse(['error' => 'Chaque mois doit être un entier compris entre 1 et 12.'], Response::HTTP_BAD_REQUEST);
+            }
+        }
+
+        // On enregistre le conseil en base
+        $entityManager->persist($conseil);
+        $entityManager->flush();
+
+        // On retourne une réponse de succès avec le code 201 Created
+        return new JsonResponse(
+            [
+                'message' => 'Conseil créé avec succès.',
+                'conseil' => [
+                    'id' => $conseil->getId(),
+                    'content' => $conseil->getContent(),
+                    'months' => $conseil->getMonths(),
+                ],
+            ],
+            Response::HTTP_CREATED
+        );
     }
 }

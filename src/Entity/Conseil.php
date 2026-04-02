@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\ConseilRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ConseilRepository::class)]
 class Conseil
@@ -14,10 +15,20 @@ class Conseil
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: 'text')]
+    #[Assert\NotBlank(message: 'Le contenu du conseil est obligatoire.')]
+    #[Assert\Length(
+        min: 5,
+        minMessage: 'Le contenu du conseil doit contenir au moins {{ limit }} caractères.'
+    )]
     private ?string $content = null;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'json')]
+    #[Assert\NotNull(message: 'La liste des mois est obligatoire.')]
+    #[Assert\Count(
+        min: 1,
+        minMessage: 'Au moins un mois doit être renseigné.'
+    )]
     private array $months = [];
 
     public function getId(): ?int
