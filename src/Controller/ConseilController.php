@@ -168,4 +168,24 @@ final class ConseilController extends AbstractController
             Response::HTTP_OK
         );
     }
+
+    #[Route('/conseil/{id}', name: 'app_conseil_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour supprimer un conseil.')]
+    public function deleteConseil(int $id, ConseilRepository $conseilRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // On recherche le conseil à supprimer en base
+        $conseil = $conseilRepository->find($id);
+
+        // Si le conseil n'existe pas, erreur 404
+        if (!$conseil) {
+            return new JsonResponse(['error' => 'Conseil introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        // On supprime le conseil
+        $entityManager->remove($conseil);
+        $entityManager->flush();
+
+        // On retourne une réponse JSON de succès
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
 }
