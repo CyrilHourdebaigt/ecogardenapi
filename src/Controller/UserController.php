@@ -162,4 +162,24 @@ final class UserController extends AbstractController
             Response::HTTP_OK
         );
     }
+
+    #[Route('/user/{id}', name: 'app_user_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour supprimer un utilisateur.')]
+    public function deleteUser(int $id, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // On recherche l'utilisateur à supprimer en base de données
+        $user = $userRepository->find($id);
+
+        // Si l'utilisateur n'existe pas, on retourne une erreur 404
+        if (!$user) {
+            return new JsonResponse(['error' => 'Utilisateur introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        // On supprime l'utilisateur
+        $entityManager->remove($user);
+        $entityManager->flush();
+
+        // On retourne une réponse vide avec le code 204 No Content
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
 }
