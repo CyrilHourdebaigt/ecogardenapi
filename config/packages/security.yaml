@@ -46,6 +46,7 @@ security:
         - { path: ^/auth$, roles: PUBLIC_ACCESS }
         - { path: ^/user$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/conseil, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/meteo, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
