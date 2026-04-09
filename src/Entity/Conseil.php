@@ -10,11 +10,13 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: ConseilRepository::class)]
 class Conseil
 {
+    // Identifiant unique du conseil
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    // Description du conseil
     #[ORM\Column(type: 'text')]
     #[Assert\NotBlank(message: 'Le contenu du conseil est obligatoire.')]
     #[Assert\Length(
@@ -23,6 +25,7 @@ class Conseil
     )]
     private ?string $content = null;
 
+    // Mois associé au conseil
     #[ORM\Column(type: 'json')]
     #[Assert\NotNull(message: 'La liste des mois est obligatoire.')]
     #[Assert\Count(

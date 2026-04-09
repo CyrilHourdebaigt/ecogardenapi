@@ -14,6 +14,7 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 final class MeteoController extends AbstractController
 {
+    // Route permettant de récuperer la météo associé à la ville d'un utilisateur
     #[Route('/meteo', name: 'app_meteo_user_city', methods: ['GET'])]
     public function getByUserCity(HttpClientInterface $httpClient, TagAwareCacheInterface $cachePool): JsonResponse
     {
@@ -117,6 +118,7 @@ final class MeteoController extends AbstractController
         return new JsonResponse($weatherResult, Response::HTTP_OK);
     }
 
+    // Route permettant de récuperer la météo d'une ville
     #[Route('/meteo/{ville}', name: 'app_meteo_by_city', methods: ['GET'])]
     public function getByCity(string $ville, HttpClientInterface $httpClient, TagAwareCacheInterface $cachePool): JsonResponse
     {
@@ -135,7 +137,7 @@ final class MeteoController extends AbstractController
 
         $weatherResult = $cachePool->get($idCache, function (ItemInterface $item) use ($ville, $httpClient, $apiKey) {
             //echo "L'ELEMENT N'EST PAS ENCORE EN CACHE !\n";
-            
+
             // On ajoute un tag pour pouvoir invalider facilement le cache météo si besoin
             $item->tag('meteoCache');
 

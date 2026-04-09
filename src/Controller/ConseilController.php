@@ -16,6 +16,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class ConseilController extends AbstractController
 {
+    // Route permettant de récuperer tous les conseils
     #[Route('/conseil', name: 'app_conseil_list', methods: ['GET'])]
     public function index(ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
     {
@@ -29,6 +30,7 @@ final class ConseilController extends AbstractController
         return new JsonResponse($jsonConseils, Response::HTTP_OK, [], true);
     }
 
+    // Route permettant de récuperer conseils par mois
     #[Route('/conseil/{mois}', name: 'app_conseil_by_month', methods: ['GET'])]
     public function getByMonth(int $mois, ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
     {
@@ -56,6 +58,7 @@ final class ConseilController extends AbstractController
         return new JsonResponse($jsonConseils, Response::HTTP_OK, [], true);
     }
 
+    // Route permettant de créer un conseil
     #[Route('/conseil', name: 'app_conseil_create', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour créer un conseil.')]
     public function createConseil(Request $request, SerializerInterface $serializer, ValidatorInterface $validator, EntityManagerInterface $entityManager): JsonResponse
@@ -103,6 +106,7 @@ final class ConseilController extends AbstractController
         );
     }
 
+    // Route permettant de mettre à jour un conseil
     #[Route('/conseil/{id}', name: 'app_conseil_update', methods: ['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour modifier un conseil.')]
     public function updateConseil(
@@ -169,6 +173,7 @@ final class ConseilController extends AbstractController
         );
     }
 
+    // Route permettant de supprimer un conseil
     #[Route('/conseil/{id}', name: 'app_conseil_delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour supprimer un conseil.')]
     public function deleteConseil(int $id, ConseilRepository $conseilRepository, EntityManagerInterface $entityManager): JsonResponse

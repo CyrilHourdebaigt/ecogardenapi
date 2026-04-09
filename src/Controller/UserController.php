@@ -87,6 +87,7 @@ final class UserController extends AbstractController
         );
     }
 
+    // Route privée permettant de modifier un utilisateur
     #[Route('/user/{id}', name: 'app_user_update', methods: ['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour modifier un utilisateur.')]
     public function updateUser(
@@ -163,6 +164,7 @@ final class UserController extends AbstractController
         );
     }
 
+    // Route privée permettant de supprimer un utilisateur
     #[Route('/user/{id}', name: 'app_user_delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n’avez pas les droits suffisants pour supprimer un utilisateur.')]
     public function deleteUser(int $id, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
