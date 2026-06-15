@@ -24,7 +24,7 @@ class ExceptionSubscriber implements EventSubscriberInterface
         } else {
             $data = [
                 'status' => 500,
-                'message' => $exception->getMessage(),
+                'message' => 'Impossible de traiter la requête pour le moment.',
             ];
 
             $event->setResponse(new JsonResponse($data, JsonResponse::HTTP_INTERNAL_SERVER_ERROR));
